@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: php-container
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - mysql
+    environment:
+      - PHP_MEMORY_LIMIT=512M
+  mysql:
+    image: mysql:8
+    container_name: mysql-container
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: app_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+  composer:
+    image: composer:latest
+    container_name: composer-container
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - php
+  npm:
+    image: node:18
+    container_name: npm-container
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - php
+  nginx:
+    image: nginx:latest
+    container_name: nginx-container
+    volumes:
+      - ./src:/var/www/html
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - php
+networks:
+  app-network:
+    driver: bridge
+volumes:
+  mysql_data: {}
